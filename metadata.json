@@ -1,7 +1,0 @@
-{
-  "name": "RedOnTrack Station Monitor",
-  "description": "Professional station monitoring and railway safety dashboard with AI-driven analysis.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
