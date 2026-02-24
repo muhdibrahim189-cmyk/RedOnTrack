@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import Header from '../components/Header';
-import { DayFolder, CameraFile } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { Header, SectionHeader } from '../components';
+import { DayFolder, CameraFile } from '../domain';
+import { BRANDING } from '../constants';
 
 const generateMockCatalog = (): DayFolder[] => {
   const folders: DayFolder[] = [];
@@ -38,6 +38,7 @@ const generateMockCatalog = (): DayFolder[] => {
 const RawDataCatalog: React.FC = () => {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const folders = useMemo(() => generateMockCatalog(), []);
+  const navigate = useNavigate();
 
   const selectedFolder = useMemo(() => 
     folders.find(f => f.id === selectedFolderId), 
@@ -46,35 +47,36 @@ const RawDataCatalog: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header 
+        logoUrl={BRANDING.logoUrl}
+        brandName="RedOn|Track"
+      />
       <div className="p-8 max-w-6xl mx-auto space-y-12">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-zinc-100 pb-8">
-          <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase italic">
-              {selectedFolder ? `${selectedFolder.day}_${selectedFolder.date}` : 'Historical Raw Data'}
-            </h2>
-            <p className="text-zinc-400 mono text-xs mt-1 uppercase tracking-widest">
-              {selectedFolder ? `Terminal Node Hub-09 // Full Stream Access` : 'Archived Telemetry Index // Last 7 Days'}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {selectedFolder && (
+        <SectionHeader 
+          title={selectedFolder ? `${selectedFolder.day}_${selectedFolder.date}` : 'Historical Raw Data'}
+          subtitle={selectedFolder ? `Terminal Node Hub-09 // Full Stream Access` : 'Archived Telemetry Index // Last 7 Days'}
+          actions={
+            <div className="flex items-center gap-4">
+              {selectedFolder && (
+                <button 
+                  onClick={() => setSelectedFolderId(null)}
+                  className="px-6 py-2 bg-zinc-100 border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to Folders
+                </button>
+              )}
               <button 
-                onClick={() => setSelectedFolderId(null)}
-                className="px-6 py-2 bg-zinc-100 border border-zinc-200 text-zinc-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all flex items-center gap-2"
+                onClick={() => navigate('/')}
+                className="px-6 py-2 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all shadow-lg shadow-gray-900/10"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Folders
+                Station Exit
               </button>
-            )}
-            <Link to="/" className="px-6 py-2 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all shadow-lg shadow-gray-900/10">
-              Station Exit
-            </Link>
-          </div>
-        </header>
+            </div>
+          }
+        />
 
         {/* Catalog Statistics */}
         {!selectedFolder && (

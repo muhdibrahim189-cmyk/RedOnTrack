@@ -104,8 +104,10 @@ export const MONTHLY_TIME_STATS: AccidentStat[] = [
 ];
 
 // ============ UI Constants ============
+import logo from '../assets/logo.png';
+
 export const BRANDING = {
-  logoUrl: 'https://lh3.googleusercontent.com/d/1UyQIXBXstj80Wc6llsBbE4NWK0rqMjaf',
+  logoUrl: logo,
   name: 'RedOnTrack',
   accentColor: 'red-600',
   tagline: 'Next-Gen Railway Intelligence',

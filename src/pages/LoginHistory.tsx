@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import Header from '../components/Header';
-import { LoginHistoryEntry } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { Header, SectionHeader } from '../components';
+import { LoginHistoryEntry } from '../domain';
+import { BRANDING } from '../constants';
 
 const MOCK_HISTORY: LoginHistoryEntry[] = [
   { no: 1, name: 'Sarah Jenkins', id: '10064620', position: 'Station Manager', loginTime: '2024-05-24 08:00:12', signOutTime: '2024-05-24 16:30:45' },
@@ -20,6 +20,7 @@ type SortOrder = 'asc' | 'desc';
 const LoginHistory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder } | null>(null);
+  const navigate = useNavigate();
 
   const handleSort = (key: SortKey) => {
     let order: SortOrder = 'desc';
@@ -40,7 +41,6 @@ const LoginHistory: React.FC = () => {
         const valA = a[sortConfig.key];
         const valB = b[sortConfig.key];
 
-        // Handle "STILL ACTIVE" which should usually be considered as "latest"
         if (valA === 'STILL ACTIVE') return sortConfig.order === 'desc' ? -1 : 1;
         if (valB === 'STILL ACTIVE') return sortConfig.order === 'desc' ? 1 : -1;
 
@@ -74,36 +74,41 @@ const LoginHistory: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header 
+        logoUrl={BRANDING.logoUrl}
+        brandName="RedOn|Track"
+      />
       <div className="p-8 max-w-6xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-100 pb-8 gap-6">
-          <div>
-            <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase italic">Authority Access Logs</h2>
-            <p className="text-zinc-400 mono text-xs mt-1 uppercase tracking-widest">Biometric & ID Validation History</p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-            <div className="relative group">
-              <input
-                type="text"
-                placeholder="Search name, ID (8-digit)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/5 focus:bg-white focus:border-red-200 transition-all text-sm font-medium mono"
-              />
-              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+        <SectionHeader 
+          title="Authority Access Logs"
+          subtitle="Biometric & ID Validation History"
+          actions={
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <div className="relative group">
+                <input
+                  type="text"
+                  placeholder="Search name, ID (8-digit)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full sm:w-64 pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/5 focus:bg-white focus:border-red-200 transition-all text-sm font-medium mono"
+                />
+                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              
+              <button 
+                onClick={() => navigate('/')} 
+                className="group flex items-center justify-center gap-2 text-zinc-500 hover:text-red-600 transition-colors mono text-sm px-6 py-3 bg-zinc-50 rounded-2xl border border-zinc-200 hover:border-red-200"
+              >
+                <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+              </button>
             </div>
-            
-            <Link to="/" className="group flex items-center justify-center gap-2 text-zinc-500 hover:text-red-600 transition-colors mono text-sm px-6 py-3 bg-zinc-50 rounded-2xl border border-zinc-200 hover:border-red-200">
-              <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back
-            </Link>
-          </div>
-        </header>
+          }
+        />
 
         <div className="bg-white border border-zinc-100 rounded-[40px] overflow-hidden shadow-2xl shadow-zinc-100/50">
           <div className="overflow-x-auto">

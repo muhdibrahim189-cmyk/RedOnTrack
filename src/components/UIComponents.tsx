@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 // ============ Stat Card Component ============
 interface StatCardProps {
@@ -73,14 +74,14 @@ export const NavButton: React.FC<NavButtonProps> = ({
 
   if (href) {
     return (
-      <a href={href} className={commonClass}>
+      <Link to={href} className={commonClass}>
         {content}
         {icon && (
           <div className="ml-auto text-zinc-300 group-hover:text-red-500 group-hover:translate-x-1 transition-all">
             {icon}
           </div>
         )}
-      </a>
+      </Link>
     );
   }
 

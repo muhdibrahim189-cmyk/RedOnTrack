@@ -1,183 +1,65 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
-import { generateGeminiContent } from '../utils/geminiApi'; // Import the new utility
-import { FootageFolder, AccidentStat } from '../types';
+import { Header, StatCard, SectionHeader, Modal } from '../components';
+import { 
+  useAccidentAnalytics, 
+  useAccidentFolders, 
+  useFootageFolderFilter, 
+  useAIAnalysis 
+} from '../hooks';
 import { INITIAL_MOCK_FOLDERS } from '../constants';
 
-const MOCK_FOLDERS: FootageFolder[] = [
-  { id: 'F-001', date: '22/05/2024', day: 'Wednesday', time: '14:30', platform: 'Platform 2', remarks: 'Passenger slip near escalator. Medical team responded in 2 mins.', cameras: ['CAM-02', 'CAM-05'], saved: true },
-  { id: 'F-002', date: '19/05/2024', day: 'Sunday', time: '02:45', platform: 'Platform 4', remarks: 'Unauthorized track access. Trespasser fled toward North Exit.', cameras: ['CAM-04', 'CAM-08', 'CAM-09'], saved: false },
-  { id: 'F-003', date: '15/05/2024', day: 'Wednesday', time: '08:15', platform: 'Platform 1', remarks: 'Heavy congestion leading to minor collision between commuters.', cameras: ['CAM-01'], saved: true },
-  { id: 'F-004', date: '10/05/2024', day: 'Friday', time: '18:50', platform: 'Platform 3', remarks: 'Luggage left unattended for 20 mins. Bomb squad cleared.', cameras: ['CAM-03', 'CAM-07'], saved: false },
-  { id: 'F-005', date: '24/05/2024', day: 'Friday', time: '19:20', platform: 'Platform 2', remarks: 'Drunk passenger near platform edge. Escorted by security.', cameras: ['CAM-02'], saved: false },
-  { id: 'F-006', date: '20/05/2024', day: 'Monday', time: '07:45', platform: 'Platform 1', remarks: 'Technical fault on platform doors reported.', cameras: ['CAM-01', 'CAM-02'], saved: true },
-];
-
-// Generate dynamic-ish stats based on a seed (week index)
-const getStatsForWeek = (weekIndex: number, dimension: 'day' | 'time'): AccidentStat[] => {
-  const seeds = [
-    // Week 0 (Current)
-    { day: [2, 1, 5, 3, 6, 8, 4], time: [12, 18, 24, 6] },
-    // Week 1
-    { day: [3, 2, 4, 1, 9, 5, 2], time: [10, 15, 30, 8] },
-    // Week 2
-    { day: [1, 5, 2, 7, 4, 3, 6], time: [8, 20, 18, 12] },
-    // Week 3
-    { day: [4, 3, 8, 2, 5, 7, 1], time: [15, 12, 22, 5] },
-  ];
-  
-  const data = seeds[weekIndex];
-  if (dimension === 'day') {
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return labels.map((l, i) => ({ label: l, value: data.day[i] }));
-  } else {
-    const labels = ['06-12', '12-18', '18-00', '00-06'];
-    return labels.map((l, i) => ({ label: l, value: data.time[i] }));
-  }
-};
-
-const MONTHLY_DAY_STATS: AccidentStat[] = [
-  { label: 'Mon', value: 12 }, { label: 'Tue', value: 8 }, { label: 'Wed', value: 22 }, 
-  { label: 'Thu', value: 14 }, { label: 'Fri', value: 28 }, { label: 'Sat', value: 32 }, { label: 'Sun', value: 10 },
-];
-
-const MONTHLY_TIME_STATS: AccidentStat[] = [
-  { label: '06-12', value: 45 }, { label: '12-18', value: 62 }, { label: '18-00', value: 88 }, { label: '00-06', value: 15 },
-];
-
 const AccidentAnalysis: React.FC = () => {
-  const [analyzing, setAnalyzing] = useState(false);
-  const [aiResult, setAiResult] = useState<string | null>(null);
-  
-  // Toggles
-  const [period, setPeriod] = useState<'weekly' | 'monthly'>('weekly');
-  const [dimension, setDimension] = useState<'day' | 'time'>('day');
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = current, 1-3 = previous
-  
-  // Graph Filtering State
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [folders, setFolders] = useState<FootageFolder[]>(() => {
-    const saved = localStorage.getItem('footage_folders');
-    return saved ? JSON.parse(saved) : INITIAL_MOCK_FOLDERS;
-  });
+  const {
+    period,
+    setPeriod,
+    dimension,
+    setDimension,
+    weekOffset,
+    setWeekOffset,
+    selectedFilter,
+    setSelectedFilter,
+    currentStats,
+    totalCases,
+    maxValue,
+    dateRangeLabel,
+    trendPercentage,
+    isTrendUp,
+  } = useAccidentAnalytics();
 
-  // Persist to localStorage
-  React.useEffect(() => {
-    localStorage.setItem('footage_folders', JSON.stringify(folders));
-  }, [folders]);
+  const {
+    folders,
+    updateRemarks,
+    toggleSave,
+  } = useAccidentFolders(INITIAL_MOCK_FOLDERS);
 
-  // Date Range Calculation for UI
-  const dateRangeLabel = useMemo(() => {
-    const now = new Date();
-    // Move to end of current week (Sunday)
-    const end = new Date(now);
-    end.setDate(now.getDate() - now.getDay() - (weekOffset * 7) + 7);
-    const start = new Date(end);
-    start.setDate(end.getDate() - 6);
-    
-    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-    return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}, ${end.getFullYear()}`;
-  }, [weekOffset]);
-
-  // Determine current stats dataset
-  const currentStats = useMemo(() => {
-    if (period === 'weekly') {
-      return getStatsForWeek(weekOffset, dimension);
-    } else {
-      return dimension === 'day' ? MONTHLY_DAY_STATS : MONTHLY_TIME_STATS;
-    }
-  }, [period, dimension, weekOffset]);
-
-  const totalCases = useMemo(() => currentStats.reduce((acc, curr) => acc + curr.value, 0), [currentStats]);
-  const maxValue = useMemo(() => {
-    const val = Math.max(...currentStats.map(s => s.value));
-    return val > 0 ? val : 1; 
-  }, [currentStats]);
-  
-  const trendPercentage = period === 'weekly' ? '+12%' : '-4%';
-  const isTrendUp = trendPercentage.startsWith('+');
-
-  const filteredFolders = useMemo(() => {
-    let result = folders;
-
-    // Filter by Graph selection
-    if (!selectedFilter) return result;
-    
-    return result.filter(f => {
-      if (dimension === 'day') {
-        const dayMap: Record<string, string> = { 
-          'Mon': 'Monday', 'Tue': 'Tuesday', 'Wed': 'Wednesday', 
-          'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday' 
-        };
-        return f.day === dayMap[selectedFilter];
-      } else {
-        const hour = parseInt(f.time.split(':')[0]);
-        if (selectedFilter === '06-12') return hour >= 6 && hour < 12;
-        if (selectedFilter === '12-18') return hour >= 12 && hour < 18;
-        if (selectedFilter === '18-00') return hour >= 18 || (hour >= 0 && hour < 6 && selectedFilter === '18-00'); 
-        if (selectedFilter === '00-06') return hour >= 0 && hour < 6;
-        return true;
-      }
-    });
-  }, [selectedFilter, folders, dimension]);
-
-  const performAnalysis = async (folder: FootageFolder) => {
-    setAnalyzing(true);
-    try {
-      const prompt = `Perform a safety investigation for this accident: 
-      Location: ${folder.platform}, Time: ${folder.time}, Day: ${folder.day}, Date: ${folder.date}. 
-      Initial Remarks: ${folder.remarks}. 
-      Suggest technical causes and 3 preventative measures.`;
-      
-      // Use the new utility function
-      const result = await generateGeminiContent(prompt, 'gemini-3-flash-preview'); // Changed model to match original usage
-      setAiResult(result || "No analysis available.");
-    } catch (err: any) {
-      console.error(err);
-      setAiResult(`SYSTEM ERROR: AI engine failed to connect. Details: ${err.message || ''}`);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const handleRemarkChange = (id: string, text: string) => {
-    setFolders(prev => prev.map(f => f.id === id ? { ...f, remarks: text } : f));
-  };
-
-  const toggleSave = (id: string) => {
-    setFolders(prev => prev.map(f => f.id === id ? { ...f, saved: !f.saved } : f));
-  };
+  const { filteredFolders } = useFootageFolderFilter(folders, selectedFilter, dimension);
+  const { analyzing, aiResult, performAnalysis, clearResult } = useAIAnalysis();
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header 
+        logoUrl="https://lh3.googleusercontent.com/d/1UyQIXBXstj80Wc6llsBbE4NWK0rqMjaf"
+        brandName="RedOn|Track"
+      />
+      
       <div className="p-8 max-w-6xl mx-auto space-y-12">
         {/* Metric Overview */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-zinc-50 border border-zinc-100 p-6 rounded-3xl shadow-sm">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mono mb-1">Total Cases ({period})</p>
-            <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-black text-gray-900 tracking-tighter">{totalCases}</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isTrendUp ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                {trendPercentage} vs Prev. {period === 'weekly' ? 'Week' : 'Month'}
-              </span>
-            </div>
-          </div>
-          <div className="bg-zinc-50 border border-zinc-100 p-6 rounded-3xl shadow-sm">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mono mb-1">Critical Time Slot</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-black text-gray-900 tracking-tighter italic uppercase">18:00 - 00:00</span>
-              <span className="text-[10px] text-zinc-400 font-bold uppercase mono">High Vol</span>
-            </div>
-          </div>
-          <div className="bg-zinc-50 border border-zinc-100 p-6 rounded-3xl shadow-sm">
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mono mb-1">Investigation Status</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-black text-gray-900 tracking-tighter italic uppercase">84% Resolved</span>
-              <span className="text-[10px] text-zinc-400 font-bold uppercase mono">Active</span>
-            </div>
-          </div>
+          <StatCard 
+            label={`Total Cases (${period})`}
+            value={totalCases}
+            trend={`${trendPercentage} vs Prev.`}
+            trendIsUp={isTrendUp}
+          />
+          <StatCard 
+            label="Critical Time Slot"
+            value="18:00 - 00:00"
+          />
+          <StatCard 
+            label="Investigation Status"
+            value="84% Resolved"
+          />
         </section>
 
         {/* Analytics Section */}
@@ -264,9 +146,8 @@ const AccidentAnalysis: React.FC = () => {
             </div>
           )}
 
-          {/* Bar Chart Implementation - Height fixed at 250px */}
+          {/* Bar Chart Implementation */}
           <div className="flex items-end justify-between h-[250px] gap-3 px-2 relative border-b border-zinc-100 pb-2">
-            {/* Grid line backgrounds */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-[0.05] z-0">
               {[...Array(6)].map((_, i) => <div key={i} className="w-full h-[1px] bg-gray-900" />)}
             </div>
@@ -298,34 +179,32 @@ const AccidentAnalysis: React.FC = () => {
 
         {/* Footage Archives Section */}
         <section className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest italic">Incident Archive</h3>
-              <p className="text-[10px] text-zinc-400 mono uppercase">DD/MM/YYYY_Day_Time_Platform</p>
-            </div>
+          <SectionHeader 
+            title="Incident Archive"
+            subtitle="DD/MM/YYYY_Day_Time_Platform"
+            actions={
+              <>
+                <Link
+                  to="/archive"
+                  className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-zinc-200 bg-white text-gray-900 hover:border-red-600 hover:text-red-600 transition-all flex items-center gap-3"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  Show Saved Folders
+                </Link>
 
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Saved Archive Link Button */}
-              <Link
-                to="/archive"
-                className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-zinc-200 bg-white text-gray-900 hover:border-red-600 hover:text-red-600 transition-all flex items-center gap-3"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                </svg>
-                Show Saved Folders
-              </Link>
-
-              {selectedFilter && (
-                <div className="flex items-center gap-3">
-                  <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-                  <p className="text-xs font-black text-red-600 bg-red-50 px-4 py-2 rounded-2xl border border-red-100">
-                    Filtered by: {selectedFilter}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+                {selectedFilter && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                    <p className="text-xs font-black text-red-600 bg-red-50 px-4 py-2 rounded-2xl border border-red-100">
+                      Filtered by: {selectedFilter}
+                    </p>
+                  </div>
+                )}
+              </>
+            }
+          />
 
           <div className="grid grid-cols-1 gap-6">
             {filteredFolders.length > 0 ? filteredFolders.map((folder) => (
@@ -385,7 +264,7 @@ const AccidentAnalysis: React.FC = () => {
                     <div className="relative group/remarks">
                       <textarea 
                         value={folder.remarks}
-                        onChange={(e) => handleRemarkChange(folder.id, e.target.value)}
+                        onChange={(e) => updateRemarks(folder.id, e.target.value)}
                         placeholder="Log detailed remarks for law enforcement investigation. Specify sequence of events, identified persons, and damage assessment..."
                         className="w-full h-40 p-8 text-sm bg-zinc-50 border border-zinc-200 rounded-[32px] outline-none focus:ring-8 focus:ring-red-500/5 focus:bg-white focus:border-red-200 transition-all text-gray-700 font-medium leading-relaxed resize-none shadow-inner"
                       />
@@ -445,41 +324,32 @@ const AccidentAnalysis: React.FC = () => {
         </section>
 
         {/* AI Analysis Result Modal */}
-        {aiResult && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-900/70 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="w-full max-w-3xl bg-white rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-              <div className="p-10 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
-                <div>
-                  <h3 className="text-3xl font-black italic uppercase tracking-tighter">Forensic Insights</h3>
-                  <p className="text-[11px] text-red-600 font-black mono uppercase tracking-widest mt-1">AI Safety Engine v4.2.1-Flash</p>
-                </div>
-                <button onClick={() => setAiResult(null)} className="w-14 h-14 flex items-center justify-center hover:bg-zinc-100 rounded-full transition-all border border-zinc-100">
-                  <svg className="w-7 h-7 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-10 max-h-[60vh] overflow-y-auto">
-                <div className="prose prose-zinc max-w-none">
-                  <div className="text-gray-700 font-medium text-base leading-relaxed whitespace-pre-wrap mono bg-zinc-50 p-10 rounded-[32px] border border-zinc-200 shadow-inner">
-                    {aiResult}
-                  </div>
-                </div>
-              </div>
-              <div className="p-10 bg-white border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic text-center sm:text-left">
-                  This report is AI-generated for advisory use only. <br/> Cross-verify with ground physical evidence.
-                </p>
-                <button 
-                  onClick={() => setAiResult(null)}
-                  className="w-full sm:w-auto bg-red-600 text-white px-12 py-5 rounded-[24px] text-[11px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl shadow-red-600/30 active:scale-95"
-                >
-                  Confirm & Log Report
-                </button>
+        <Modal 
+          isOpen={!!aiResult} 
+          onClose={clearResult}
+          title="Forensic Insights"
+          size="lg"
+        >
+          <div className="space-y-6">
+            <p className="text-[11px] text-red-600 font-black mono uppercase tracking-widest">AI Safety Engine v4.2.1-Flash</p>
+            <div className="max-h-[60vh] overflow-y-auto">
+              <div className="text-gray-700 font-medium text-base leading-relaxed whitespace-pre-wrap mono bg-zinc-50 p-6 rounded-[24px] border border-zinc-200 shadow-inner">
+                {aiResult}
               </div>
             </div>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-4">
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic text-center sm:text-left">
+                This report is AI-generated for advisory use only. <br/> Cross-verify with ground physical evidence.
+              </p>
+              <button 
+                onClick={clearResult}
+                className="w-full sm:w-auto bg-red-600 text-white px-8 py-4 rounded-[20px] text-[11px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl shadow-red-600/30 active:scale-95"
+              >
+                Confirm & Log Report
+              </button>
+            </div>
           </div>
-        )}
+        </Modal>
       </div>
     </div>
   );

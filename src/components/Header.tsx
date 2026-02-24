@@ -54,13 +54,20 @@ const Header: React.FC<HeaderProps> = ({
           hideBranding ? 'opacity-0 pointer-events-none -translate-x-4' : 'opacity-100'
         }`}
       >
-        <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-zinc-50 border border-zinc-100 p-1.5 shadow-sm">
           <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
         </div>
-        <span className="font-black tracking-tighter text-gray-900 uppercase italic text-xl">
-          {brandName.split('|')[0]}
-          <span className={`text-${accentColor}`}>{brandName.split('|')[1]}</span>
-        </span>
+        <div className="flex flex-col -space-y-1">
+          <span className="font-black tracking-tighter text-gray-900 uppercase italic text-xl flex items-center gap-2">
+            {brandName.split('|')[0]}
+            <span className={`text-${accentColor}`}>{brandName.split('|')[1]}</span>
+            <div className="flex items-center gap-1.5 ml-2 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+              <span className="text-[8px] font-black text-red-600 uppercase tracking-widest">Live</span>
+            </div>
+          </span>
+          <span className="text-[8px] font-bold text-zinc-400 uppercase tracking-[0.3em] mono ml-0.5">Station Monitor</span>
+        </div>
       </Link>
 
       <div className="flex items-center gap-4 relative" ref={menuRef}>

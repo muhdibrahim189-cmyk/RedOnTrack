@@ -1,74 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
-import { FootageFolder } from '../types';
-import { generateGeminiContent } from '../utils/geminiApi'; // Import the new utility
-import { INITIAL_MOCK_FOLDERS } from '../constants';
+import { Header, Modal, SectionHeader } from '../components';
+import { useAccidentFolders, useAIAnalysis } from '../hooks';
+import { INITIAL_MOCK_FOLDERS, BRANDING } from '../constants';
 
 const SavedArchive: React.FC = () => {
-  const [folders, setFolders] = useState<FootageFolder[]>(() => {
-    const saved = localStorage.getItem('footage_folders');
-    const allFolders = saved ? JSON.parse(saved) : INITIAL_MOCK_FOLDERS;
-    return allFolders.filter((f: FootageFolder) => f.saved);
-  });
-  const [analyzing, setAnalyzing] = useState(false);
-  const [aiResult, setAiResult] = useState<string | null>(null);
-
-  // Persist back to all folders when toggling save
-  const toggleSave = (id: string) => {
-    const saved = localStorage.getItem('footage_folders');
-    const allFolders: FootageFolder[] = saved ? JSON.parse(saved) : INITIAL_MOCK_FOLDERS;
-    const updated = allFolders.map(f => f.id === id ? { ...f, saved: false } : f);
-    localStorage.setItem('footage_folders', JSON.stringify(updated));
-    setFolders(updated.filter(f => f.saved));
-  };
-
-  const handleRemarkChange = (id: string, text: string) => {
-    const saved = localStorage.getItem('footage_folders');
-    const allFolders: FootageFolder[] = saved ? JSON.parse(saved) : INITIAL_MOCK_FOLDERS;
-    const updated = allFolders.map(f => f.id === id ? { ...f, remarks: text } : f);
-    localStorage.setItem('footage_folders', JSON.stringify(updated));
-    setFolders(updated.filter(f => f.saved));
-  };
-
-  const performAnalysis = async (folder: FootageFolder) => {
-    setAnalyzing(true);
-    try {
-      const prompt = `Perform a safety investigation for this accident: 
-      Location: ${folder.platform}, Time: ${folder.time}, Day: ${folder.day}, Date: ${folder.date}. 
-      Initial Remarks: ${folder.remarks}. 
-      Suggest technical causes and 3 preventative measures.`;
-      
-      // Use the new utility function
-      const result = await generateGeminiContent(prompt, 'gemini-3-flash-preview'); // Changed model to match original usage
-      setAiResult(result || "No analysis available.");
-    } catch (err: any) {
-      console.error(err);
-      setAiResult(`SYSTEM ERROR: AI engine failed to connect. Details: ${err.message || ''}`);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
+  const {
+    getSavedFolders,
+    toggleSave,
+    updateRemarks,
+  } = useAccidentFolders(INITIAL_MOCK_FOLDERS);
+  
+  const folders = getSavedFolders();
+  const { analyzing, aiResult, performAnalysis, clearResult } = useAIAnalysis();
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header 
+        logoUrl={BRANDING.logoUrl}
+        brandName="RedOn|Track"
+      />
       <div className="p-8 max-w-6xl mx-auto space-y-12">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Secure Saved Archive</h2>
-            <p className="text-[10px] text-zinc-400 mono uppercase tracking-widest">Restricted Access • Forensic Data Vault</p>
-          </div>
-          <Link 
-            to="/analysis"
-            className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-zinc-200 hover:border-red-600 hover:text-red-600 transition-all flex items-center gap-3"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Analysis
-          </Link>
-        </div>
+        <SectionHeader 
+          title="Secure Saved Archive"
+          subtitle="Restricted Access • Forensic Data Vault"
+          actions={
+            <Link 
+              to="/analysis"
+              className="px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-zinc-200 hover:border-red-600 hover:text-red-600 transition-all flex items-center gap-3"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Analysis
+            </Link>
+          }
+        />
 
         <div className="grid grid-cols-1 gap-6">
           {folders.length > 0 ? folders.map((folder) => (
@@ -124,7 +91,7 @@ const SavedArchive: React.FC = () => {
                   <div className="relative group/remarks">
                     <textarea 
                       value={folder.remarks}
-                      onChange={(e) => handleRemarkChange(folder.id, e.target.value)}
+                      onChange={(e) => updateRemarks(folder.id, e.target.value)}
                       placeholder="Log detailed remarks..."
                       className="w-full h-40 p-8 text-sm bg-zinc-50 border border-zinc-200 rounded-[32px] outline-none focus:ring-8 focus:ring-red-500/5 focus:bg-white focus:border-red-200 transition-all text-gray-700 font-medium leading-relaxed resize-none shadow-inner"
                     />
@@ -180,41 +147,32 @@ const SavedArchive: React.FC = () => {
         </div>
 
         {/* AI Analysis Result Modal */}
-        {aiResult && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-900/70 backdrop-blur-xl animate-in fade-in duration-300">
-            <div className="w-full max-w-3xl bg-white rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-              <div className="p-10 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
-                <div>
-                  <h3 className="text-3xl font-black italic uppercase tracking-tighter">Forensic Insights</h3>
-                  <p className="text-[11px] text-red-600 font-black mono uppercase tracking-widest mt-1">AI Safety Engine v4.2.1-Flash</p>
-                </div>
-                <button onClick={() => setAiResult(null)} className="w-14 h-14 flex items-center justify-center hover:bg-zinc-100 rounded-full transition-all border border-zinc-100">
-                  <svg className="w-7 h-7 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-10 max-h-[60vh] overflow-y-auto">
-                <div className="prose prose-zinc max-w-none">
-                  <div className="text-gray-700 font-medium text-base leading-relaxed whitespace-pre-wrap mono bg-zinc-50 p-10 rounded-[32px] border border-zinc-200 shadow-inner">
-                    {aiResult}
-                  </div>
-                </div>
-              </div>
-              <div className="p-10 bg-white border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic text-center sm:text-left">
-                  This report is AI-generated for advisory use only.
-                </p>
-                <button 
-                  onClick={() => setAiResult(null)}
-                  className="w-full sm:w-auto bg-red-600 text-white px-12 py-5 rounded-[24px] text-[11px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl shadow-red-600/30 active:scale-95"
-                >
-                  Confirm & Log Report
-                </button>
+        <Modal 
+          isOpen={!!aiResult} 
+          onClose={clearResult}
+          title="Forensic Insights"
+          size="lg"
+        >
+          <div className="space-y-6">
+            <p className="text-[11px] text-red-600 font-black mono uppercase tracking-widest">AI Safety Engine v4.2.1-Flash</p>
+            <div className="max-h-[60vh] overflow-y-auto">
+              <div className="text-gray-700 font-medium text-base leading-relaxed whitespace-pre-wrap mono bg-zinc-50 p-6 rounded-[24px] border border-zinc-200 shadow-inner">
+                {aiResult}
               </div>
             </div>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-4">
+              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic text-center sm:text-left">
+                This report is AI-generated for advisory use only.
+              </p>
+              <button 
+                onClick={clearResult}
+                className="w-full sm:w-auto bg-red-600 text-white px-8 py-4 rounded-[20px] text-[11px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl shadow-red-600/30 active:scale-95"
+              >
+                Confirm & Log Report
+              </button>
+            </div>
           </div>
-        )}
+        </Modal>
       </div>
     </div>
   );
