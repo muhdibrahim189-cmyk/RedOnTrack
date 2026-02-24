@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
-import { GoogleGenAI } from "@google/genai";
+import { generateGeminiContent } from '../utils/geminiApi'; // Import the new utility
 import { FootageFolder, AccidentStat } from '../types';
 import { INITIAL_MOCK_FOLDERS } from '../constants';
 
@@ -126,20 +125,17 @@ const AccidentAnalysis: React.FC = () => {
   const performAnalysis = async (folder: FootageFolder) => {
     setAnalyzing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Perform a safety investigation for this accident: 
       Location: ${folder.platform}, Time: ${folder.time}, Day: ${folder.day}, Date: ${folder.date}. 
       Initial Remarks: ${folder.remarks}. 
       Suggest technical causes and 3 preventative measures.`;
       
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-      });
-      setAiResult(response.text || "No analysis available.");
-    } catch (err) {
+      // Use the new utility function
+      const result = await generateGeminiContent(prompt, 'gemini-3-flash-preview'); // Changed model to match original usage
+      setAiResult(result || "No analysis available.");
+    } catch (err: any) {
       console.error(err);
-      setAiResult("SYSTEM ERROR: AI engine failed to connect.");
+      setAiResult(`SYSTEM ERROR: AI engine failed to connect. Details: ${err.message || ''}`);
     } finally {
       setAnalyzing(false);
     }
