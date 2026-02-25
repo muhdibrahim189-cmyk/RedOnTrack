@@ -21,7 +21,7 @@ RedOnTrack is a state-of-the-art station monitoring and accident analysis dashbo
 *   **Language**: [TypeScript](https://www.typescriptlang.org/)
 *   **Build Tool**: [Vite](https://vitejs.dev/)
 *   **Routing**: [React Router](https://reactrouter.com/)
-*   **AI Integration**: [Google Gemini API](https://ai.google.dev/)
+*   **AI Integration**: [@google/generative-ai SDK](https://www.npmjs.com/package/@google/generative-ai)
 *   **Styling**: Vanilla CSS with responsive design
 
 ## 🏗️ Architecture
@@ -40,7 +40,8 @@ For more details, please refer to the [Architecture Documentation](docs/ARCHITEC
 ### Prerequisites
 
 *   Node.js (v18 or higher)
-*   npm or pnpm
+*   [pnpm](https://pnpm.io/) (Recommended)
+*   **Gemini API Key**: Obtain one from [Google AI Studio](https://aistudio.google.com/).
 
 ### Installation
 
@@ -52,28 +53,46 @@ For more details, please refer to the [Architecture Documentation](docs/ARCHITEC
 
 2.  Install dependencies:
     ```bash
-    npm install
+    pnpm install
     ```
 
 ### Configuration
 
-To enable AI features, you need a Google Gemini API key.
+To enable the AI Forensic Suite, you must configure your environment variables.
 
-1.  Create a `.env.local` file in the root directory.
-2.  Add your API key:
+1.  Copy the example environment file:
+    ```bash
+    cp .env.example .env
+    ```
+2.  Open `.env` and configure your settings:
     ```env
     VITE_GEMINI_API_KEY=your_actual_api_key_here
+    VITE_GEMINI_MODEL=gemini-2.5-flash
     ```
+
+### 🤖 Supported AI Models
+
+As of February 2026, the application supports the following Gemini model families:
+
+| Model Series | Model ID | Use Case |
+| :--- | :--- | :--- |
+| **Gemini 3 (Reasoning)** | `gemini-3.1-pro-preview` | Deep forensic reasoning & complex logic. |
+| **Gemini 3 (Flash)** | `gemini-3-flash-preview` | Ultra-fast, PhD-level reasoning. |
+| **Gemini 2.5 (Pro)** | `gemini-2.5-pro` | Stable production, 1M token context. |
+| **Gemini 2.5 (Flash)** | `gemini-2.5-flash` | **Default.** Best balance of speed/cost. |
+| **Gemini 2.5 (Lite)** | `gemini-2.5-flash-lite` | High-throughput, budget-friendly. |
+
+> **Note:** Models from the 1.5 and 2.0 series are deprecated. It is highly recommended to use the **2.5** or **3** series.
 
 ### Running the Application
 
 Start the development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📂 Project Structure
 

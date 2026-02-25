@@ -7,7 +7,7 @@ import {
   useFootageFolderFilter, 
   useAIAnalysis 
 } from '../hooks';
-import { INITIAL_MOCK_FOLDERS } from '../constants';
+import { INITIAL_MOCK_FOLDERS, BRANDING } from '../constants';
 
 const AccidentAnalysis: React.FC = () => {
   const {
@@ -39,8 +39,9 @@ const AccidentAnalysis: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header 
-        logoUrl="https://lh3.googleusercontent.com/d/1UyQIXBXstj80Wc6llsBbE4NWK0rqMjaf"
+        logoUrl={BRANDING.logoUrl}
         brandName="RedOn|Track"
+        accentColor={BRANDING.accentColor}
       />
       
       <div className="p-8 max-w-6xl mx-auto space-y-12">

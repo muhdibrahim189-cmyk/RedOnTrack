@@ -12,13 +12,24 @@ class AccidentService {
    * Perform AI analysis on a footage folder
    */
   async analyzeAccidentFootage(folder: FootageFolder): Promise<string> {
-    const prompt = `Perform a safety investigation for this accident: 
-      Location: ${folder.platform}, Time: ${folder.time}, Day: ${folder.day}, Date: ${folder.date}. 
-      Initial Remarks: ${folder.remarks}. 
-      Suggest technical causes and 3 preventative measures.`;
+    const prompt = `Act as a forensic railway safety investigator. Perform a detailed safety analysis for the following incident:
+
+Incident Metadata:
+- Platform: ${folder.platform}
+- Time of Incident: ${folder.time} (${folder.day}, ${folder.date})
+- Initial Personnel Remarks: "${folder.remarks}"
+- Available Camera Angles: ${folder.cameras.join(', ')}
+
+Please provide:
+1. ANOMALY DETECTION: Identify potential technical or human factors based on the metadata.
+2. RISK ASSESSMENT: Evaluate the severity and impact on station operations.
+3. PREVENTATIVE MEASURES: Suggest 3-5 specific, actionable technical or procedural improvements to prevent recurrence.
+4. FORENSIC SUMMARY: A concise professional summary for the official station log.
+
+Keep the tone professional, analytical, and concise.`;
 
     try {
-      const result = await geminiService.generateContent(prompt, 'gemini-3-flash-preview');
+      const result = await geminiService.generateContent(prompt);
       return result || 'No analysis available.';
     } catch (error) {
       throw new Error(`Analysis failed: ${(error as Error).message}`);
