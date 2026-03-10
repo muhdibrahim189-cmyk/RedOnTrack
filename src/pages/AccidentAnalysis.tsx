@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Header, StatCard, SectionHeader, Modal } from '../components';
+import { Header, StatCard, SectionHeader, Modal, CCTVFeed } from '../components';
 import { 
   useAccidentAnalytics, 
   useAccidentFolders, 
-  useFootageFolderFilter, 
-  useAIAnalysis 
+  useFootageFolderFilter,
+  useCurrentTime
 } from '../hooks';
-import { INITIAL_MOCK_FOLDERS, BRANDING } from '../constants';
+import { INITIAL_MOCK_FOLDERS, BRANDING, INITIAL_CAMERA_FEEDS } from '../constants';
+import { FootageFolder, CameraFeed } from '../domain';
 
 const AccidentAnalysis: React.FC = () => {
   const {
@@ -34,7 +35,28 @@ const AccidentAnalysis: React.FC = () => {
   } = useAccidentFolders(INITIAL_MOCK_FOLDERS);
 
   const { filteredFolders } = useFootageFolderFilter(folders, selectedFilter, dimension);
-  const { analyzing, aiResult, performAnalysis, clearResult } = useAIAnalysis();
+  const [viewingFolder, setViewingFolder] = useState<FootageFolder | null>(null);
+  const [fullscreenCamera, setFullscreenCamera] = useState<CameraFeed | null>(null);
+  const { currentTime } = useCurrentTime();
+
+  // Helper to map camera IDs to CameraFeed objects
+  const getCameraFeed = (camId: string): CameraFeed => {
+    const found = INITIAL_CAMERA_FEEDS.find(c => 
+      c.id === camId || 
+      `CAM-0${c.id}` === camId || 
+      `CAM-${c.id}` === camId
+    );
+    
+    if (found) return found;
+    
+    return {
+      id: camId,
+      name: camId,
+      location: 'VARIOUS SECTORS',
+      status: 'active',
+      lastUpdate: 'NOW'
+    };
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -160,12 +182,16 @@ const AccidentAnalysis: React.FC = () => {
                   <div className="relative w-full flex justify-center items-end h-full">
                     <div 
                       className={`w-full max-w-[54px] rounded-t-xl transition-all duration-700 ease-out origin-bottom ${
-                        selectedFilter === stat.label ? 'bg-red-600 shadow-2xl shadow-red-600/40' : 'bg-zinc-200 group-hover:bg-zinc-300'
+                        selectedFilter === stat.label 
+                          ? 'bg-red-600 shadow-2xl shadow-red-600/40' 
+                          : (stat.value === maxValue && maxValue > 0)
+                            ? 'bg-red-400 shadow-lg shadow-red-400/20' // Highlight for peak value
+                            : 'bg-zinc-200 group-hover:bg-zinc-300'
                       }`}
                       style={{ height: `${heightPercent}%`, minHeight: '4px' }}
                     >
                       <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-2xl mono z-20 whitespace-nowrap">
-                        {stat.value} CASES
+                        {stat.value === maxValue && maxValue > 0 ? '🔥 PEAK: ' : ''}{stat.value} CASES
                       </div>
                     </div>
                   </div>
@@ -214,7 +240,10 @@ const AccidentAnalysis: React.FC = () => {
                   {/* Folder Sidebar */}
                   <div className="w-full md:w-80 bg-zinc-50 p-8 flex flex-col justify-between border-b md:border-b-0 md:border-r border-zinc-100">
                     <div className="flex items-center gap-4 mb-8">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${folder.saved ? 'bg-red-600 text-white shadow-red-600/20' : 'bg-white border border-zinc-200 text-zinc-300 shadow-zinc-100'}`}>
+                      <div 
+                        onClick={() => setViewingFolder(folder)}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all cursor-pointer hover:scale-105 ${folder.saved ? 'bg-red-600 text-white shadow-red-600/20' : 'bg-white border border-zinc-200 text-zinc-300 shadow-zinc-100'}`}
+                      >
                         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z" />
                         </svg>
@@ -286,18 +315,13 @@ const AccidentAnalysis: React.FC = () => {
                           Export Data
                         </button>
                         <button 
-                          onClick={() => performAnalysis(folder)}
-                          disabled={analyzing}
+                          onClick={() => setViewingFolder(folder)}
                           className="flex-1 sm:flex-none px-8 py-3 rounded-2xl bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all shadow-xl shadow-gray-900/10 group"
                         >
-                          {analyzing ? (
-                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <svg className="w-4 h-4 text-red-500 group-hover:scale-125 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                          )}
-                          AI Forensic Suite
+                          <svg className="w-4 h-4 text-red-500 group-hover:scale-125 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l-4 4m0 0l-4-4m4 4V3" />
+                          </svg>
+                          View Perspectives
                         </button>
                       </div>
                     </div>
@@ -324,33 +348,86 @@ const AccidentAnalysis: React.FC = () => {
           </div>
         </section>
 
-        {/* AI Analysis Result Modal */}
+        {/* Camera Perspectives Modal */}
         <Modal 
-          isOpen={!!aiResult} 
-          onClose={clearResult}
-          title="Forensic Insights"
-          size="lg"
+          isOpen={!!viewingFolder} 
+          onClose={() => setViewingFolder(null)}
+          title={`Incident Perspectives Terminal - ${viewingFolder?.id}`}
+          size="2xl"
         >
-          <div className="space-y-6">
-            <p className="text-[11px] text-red-600 font-black mono uppercase tracking-widest">AI Safety Engine v4.2.1-Flash</p>
-            <div className="max-h-[60vh] overflow-y-auto">
-              <div className="text-gray-700 font-medium text-base leading-relaxed whitespace-pre-wrap mono bg-zinc-50 p-6 rounded-[24px] border border-zinc-200 shadow-inner">
-                {aiResult}
-              </div>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {viewingFolder?.cameras.map(camId => {
+                const feed = getCameraFeed(camId);
+                return (
+                  <div key={camId} className="space-y-3 group/feed">
+                    <div className="flex items-center justify-between px-2">
+                      <p className="text-[10px] font-black text-zinc-400 mono uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                        {camId} // {feed.location}
+                      </p>
+                    </div>
+                    <CCTVFeed 
+                      feed={feed} 
+                      onClick={() => setFullscreenCamera(feed)}
+                    />
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-6 pt-4">
-              <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic text-center sm:text-left">
-                This report is AI-generated for advisory use only. <br/> Cross-verify with ground physical evidence.
-              </p>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-8 border-t border-zinc-100">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                  <p className="text-[9px] font-black text-zinc-400 mono uppercase mb-1 tracking-widest">Incident Timestamp</p>
+                  <p className="text-sm font-black text-gray-900 mono">{viewingFolder?.date} {viewingFolder?.time}</p>
+                </div>
+                <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                  <p className="text-[9px] font-black text-zinc-400 mono uppercase mb-1 tracking-widest">Location Hub</p>
+                  <p className="text-sm font-black text-gray-900 mono">{viewingFolder?.platform.toUpperCase()}</p>
+                </div>
+              </div>
               <button 
-                onClick={clearResult}
-                className="w-full sm:w-auto bg-red-600 text-white px-8 py-4 rounded-[20px] text-[11px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl shadow-red-600/30 active:scale-95"
+                onClick={() => setViewingFolder(null)}
+                className="w-full sm:w-auto bg-gray-900 text-white px-10 py-4 rounded-[24px] text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-2xl shadow-gray-900/20 active:scale-95"
               >
-                Confirm & Log Report
+                Terminate Session
               </button>
             </div>
           </div>
         </Modal>
+
+        {/* Fullscreen Camera Overlay */}
+        {fullscreenCamera && (
+          <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-4 animate-in fade-in duration-300">
+            <button
+              onClick={() => setFullscreenCamera(null)}
+              className="absolute top-8 right-8 z-[101] p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all text-white backdrop-blur-xl border border-white/10"
+            >
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="relative w-full h-full max-w-7xl max-h-[80vh] flex items-center justify-center p-4">
+              <div className="w-full h-full rounded-[40px] overflow-hidden border border-white/10 shadow-2xl shadow-red-600/10">
+                <CCTVFeed feed={fullscreenCamera} showResolution={true} showLiveIndicator={true} />
+              </div>
+            </div>
+
+            <div className="absolute bottom-8 left-8 z-[101] flex flex-col gap-2">
+              <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter leading-none">
+                {fullscreenCamera.name}
+              </h2>
+              <p className="text-[10px] font-black text-red-500 mono uppercase tracking-[0.3em]">
+                {fullscreenCamera.location} // SECURE_FEED_UHD
+              </p>
+            </div>
+
+            <div className="absolute bottom-8 right-8 z-[101] text-white/50 mono text-xs tracking-widest">
+              LOCAL_TIME: {currentTime}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

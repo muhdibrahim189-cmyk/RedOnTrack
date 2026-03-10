@@ -3,7 +3,7 @@
  * Clean separation of business logic (hooks/services) and UI rendering
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import CCTVFeed from '../components/CCTVFeed';
@@ -16,11 +16,48 @@ const CameraMonitoring: React.FC = () => {
     useCameraManagement(INITIAL_CAMERA_FEEDS);
   const { currentTime } = useCurrentTime();
   const [showFlash, setShowFlash] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const navigate = useNavigate();
+
+  // Recording timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setRecordingTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording]);
 
   const handleCapture = () => {
     setShowFlash(true);
     setTimeout(() => setShowFlash(false), 200);
+  };
+
+  const toggleRecording = () => {
+    setIsRecording(!isRecording);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleNext = () => {
+    if (fullscreenIndex !== null) {
+      setFullscreenIndex((fullscreenIndex + 1) % cameras.length);
+    }
+  };
+
+  const handlePrev = () => {
+    if (fullscreenIndex !== null) {
+      setFullscreenIndex((fullscreenIndex - 1 + cameras.length) % cameras.length);
+    }
   };
 
   return (
@@ -146,8 +183,9 @@ const CameraMonitoring: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-2 sm:p-6 overflow-hidden">
           {showFlash && <div className="absolute inset-0 bg-white z-[60] opacity-80" />}
 
+          {/* Close Button */}
           <button
-            onClick={() => setFullscreenIndex(null)}
+            onClick={() => { setFullscreenIndex(null); setIsRecording(false); }}
             className="absolute top-4 right-4 z-[101] p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors text-white"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,24 +193,70 @@ const CameraMonitoring: React.FC = () => {
             </svg>
           </button>
 
+          {/* Navigation Controls */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 z-[101] p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all text-white backdrop-blur-md border border-white/10 group"
+          >
+            <svg className="w-8 h-8 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <button
+            onClick={handleNext}
+            className="absolute right-4 z-[101] p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all text-white backdrop-blur-md border border-white/10 group"
+          >
+            <svg className="w-8 h-8 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
           <div className="relative w-full h-full flex items-center justify-center">
             <CCTVFeed feed={currentFullscreenCamera} />
+            
+            {/* Recording Overlay */}
+            {isRecording && (
+              <div className="absolute top-8 left-8 flex items-center gap-3 bg-red-600/20 backdrop-blur-md px-4 py-2 rounded-full border border-red-500/30 animate-pulse">
+                <div className="w-3 h-3 rounded-full bg-red-600" />
+                <span className="text-xs font-black text-white mono uppercase tracking-widest">
+                  REC // {formatTime(recordingTime)}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="absolute bottom-4 left-4 z-[101] flex gap-4">
+          <div className="absolute bottom-8 left-8 z-[101] flex gap-4">
             <button
               onClick={handleCapture}
-              className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-md transition-all"
+              className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl backdrop-blur-md border border-white/10 transition-all flex items-center gap-3"
             >
-              📸 Snapshot
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Snapshot
             </button>
-            <button className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all">
-              ⏺️ Record
+            <button 
+              onClick={toggleRecording}
+              className={`px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all flex items-center gap-3 shadow-2xl ${
+                isRecording 
+                  ? 'bg-red-600 text-white shadow-red-600/40 animate-pulse' 
+                  : 'bg-white text-gray-900 hover:bg-zinc-100'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-white' : 'bg-red-600'}`} />
+              {isRecording ? 'Stop Recording' : 'Start Recording'}
             </button>
           </div>
 
-          <div className="absolute bottom-4 right-4 z-[101] text-white/70 text-sm font-mono">
-            {currentTime}
+          <div className="absolute bottom-8 right-8 z-[101] flex flex-col items-end gap-1">
+            <p className="text-white text-lg font-black italic uppercase tracking-tighter leading-none">
+              {currentFullscreenCamera.name}
+            </p>
+            <p className="text-zinc-400 text-[10px] font-bold uppercase mono tracking-widest">
+              {currentTime} // UHD_TRANS_ACTIVE
+            </p>
           </div>
         </div>
       )}

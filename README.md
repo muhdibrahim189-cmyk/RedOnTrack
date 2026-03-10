@@ -10,7 +10,7 @@ RedOnTrack is a state-of-the-art station monitoring and accident analysis dashbo
 
 *   **Live Camera Monitoring**: View and manage multiple CCTV feeds with PTZ (Pan-Tilt-Zoom) controls simulation.
 *   **Accident Analysis**: Visualize accident statistics over different time periods (weekly, monthly) with interactive charts.
-*   **AI-Powered Insights**: Leverage Google's Gemini API to analyze incident reports and generate actionable safety recommendations.
+*   **Multi-Perspective Analysis**: View synchronized footage from multiple camera angles for any recorded incident.
 *   **Raw Data Catalog**: Browse and filter archived footage and incident logs.
 *   **Dashboard Overview**: A centralized hub for critical metrics and system status.
 *   **Authentication**: Secure login system with role-based access control (simulated).

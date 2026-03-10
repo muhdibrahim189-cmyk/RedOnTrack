@@ -47,10 +47,11 @@ export function useAccidentAnalytics(): UseAccidentAnalyticsReturn {
             { label: 'Sun', value: 10 },
           ]
         : [
-            { label: '06-12', value: 45 },
-            { label: '12-18', value: 62 },
-            { label: '18-00', value: 88 },
-            { label: '00-06', value: 15 },
+            { label: '05-08', value: 35 },
+            { label: '09-12', value: 45 },
+            { label: '13-16', value: 62 },
+            { label: '17-20', value: 88 },
+            { label: '21-00', value: 25 },
           ];
     }
   }, [period, dimension, weekOffset]);

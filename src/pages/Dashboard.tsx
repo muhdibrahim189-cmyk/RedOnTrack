@@ -111,7 +111,7 @@ const Dashboard: React.FC = () => {
           <NavButton
             href="/analysis"
             title="Accident Analysis"
-            description="AI Forensic Suite"
+            description="Incident Archive"
             icon={ArrowIcon}
           />
           <NavButton

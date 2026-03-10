@@ -158,7 +158,7 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'full';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -174,14 +174,30 @@ export const Modal: React.FC<ModalProps> = ({
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
+    xl: 'max-w-4xl',
+    '2xl': 'max-w-7xl',
     full: 'inset-0',
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className={`bg-white rounded-2xl shadow-2xl ${sizeClasses[size]} p-6 animate-in fade-in zoom-in-95`}>
-        {title && <h3 className="text-lg font-bold mb-4">{title}</h3>}
-        {children}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+      <div 
+        className={`bg-white rounded-[32px] shadow-2xl ${size !== 'full' ? sizeClasses[size] : 'w-full h-full'} w-full overflow-hidden animate-in fade-in zoom-in-95 duration-300 flex flex-col`}
+      >
+        <div className="flex items-center justify-between p-8 border-b border-zinc-100">
+          {title && <h3 className="text-xl font-black text-gray-900 uppercase italic tracking-tighter">{title}</h3>}
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-400 hover:text-red-600"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-8">
+          {children}
+        </div>
       </div>
     </div>
   );
