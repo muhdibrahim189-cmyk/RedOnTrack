@@ -66,12 +66,27 @@ const CCTVFeed: React.FC<CCTVFeedProps> = ({
         )}
       </div>
 
-      {/* Feed Image */}
-      <img
-        src={`https://picsum.photos/seed/railway-${feed.id}/1280/720?grayscale`}
-        alt={feed.name}
-        className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700 scale-105 group-hover:scale-100"
-      />
+      {/* Feed Image or Video */}
+      {feed.videoUrl ? (
+        <div className="w-full h-full relative">
+          <iframe
+            src={feed.videoUrl}
+            title={feed.name}
+            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          ></iframe>
+          {/* Transparent overlay to catch clicks for the parent onClick */}
+          <div className="absolute inset-0 bg-transparent z-10" />
+        </div>
+      ) : (
+        <img
+          src={`https://picsum.photos/seed/railway-${feed.id}/1280/720?grayscale`}
+          alt={feed.name}
+          className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-700 scale-105 group-hover:scale-100"
+        />
+      )}
 
       {/* HUD/Grid Effect */}
       <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay" />

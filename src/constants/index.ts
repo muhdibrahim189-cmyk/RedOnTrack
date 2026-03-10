@@ -7,10 +7,38 @@ import { FootageFolder, AccidentStat, CameraFeed } from '../domain';
 
 // ============ Camera Constants ============
 export const INITIAL_CAMERA_FEEDS: CameraFeed[] = [
-  { id: '1', name: 'Platform 1', location: 'TERMINAL NORTH', status: 'active', lastUpdate: 'NOW' },
-  { id: '2', name: 'Platform 2', location: 'TERMINAL SOUTH', status: 'active', lastUpdate: 'NOW' },
-  { id: '3', name: 'Platform 3', location: 'WEST WING', status: 'active', lastUpdate: 'NOW' },
-  { id: '4', name: 'Platform 4', location: 'EAST CROSSING', status: 'active', lastUpdate: 'NOW' },
+  { 
+    id: '1', 
+    name: 'Platform 1', 
+    location: 'TERMINAL NORTH', 
+    status: 'active', 
+    lastUpdate: 'NOW',
+    videoUrl: 'https://www.youtube.com/embed/ODX_KLJ-WuQ?si=DChd6K3K3v5F5Vok&start=1&autoplay=1&mute=1&controls=0&loop=1&playlist=ODX_KLJ-WuQ'
+  },
+  { 
+    id: '2', 
+    name: 'Platform 2', 
+    location: 'TERMINAL SOUTH', 
+    status: 'active', 
+    lastUpdate: 'NOW',
+    videoUrl: 'https://www.youtube.com/embed/USnAw4e1tyE?si=h_4SXyPy5kt3UA-y&start=1&autoplay=1&mute=1&controls=0&loop=1&playlist=USnAw4e1tyE'
+  },
+  { 
+    id: '3', 
+    name: 'Platform 3', 
+    location: 'WEST WING', 
+    status: 'active', 
+    lastUpdate: 'NOW',
+    videoUrl: 'https://www.youtube.com/embed/67CK7EeLIaA?si=7waqhUiuhXd7tnzE&start=1&autoplay=1&mute=1&controls=0&loop=1&playlist=67CK7EeLIaA'
+  },
+  { 
+    id: '4', 
+    name: 'Platform 4', 
+    location: 'EAST CROSSING', 
+    status: 'active', 
+    lastUpdate: 'NOW',
+    videoUrl: 'https://www.youtube.com/embed/wLeSf-T1-tQ?si=1xdOkVP_uSUDxSqH&start=1&autoplay=1&mute=1&controls=0&loop=1&playlist=wLeSf-T1-tQ'
+  },
 ];
 
 export const MAIN_FEED: CameraFeed = {
@@ -19,6 +47,7 @@ export const MAIN_FEED: CameraFeed = {
   location: 'TERMINAL NORTH',
   status: 'active',
   lastUpdate: 'NOW',
+  videoUrl: 'https://www.youtube.com/embed/ODX_KLJ-WuQ?si=DChd6K3K3v5F5Vok&start=1&autoplay=1&mute=1&controls=0&loop=1&playlist=ODX_KLJ-WuQ'
 };
 
 // ============ Accident/Footage Constants ============

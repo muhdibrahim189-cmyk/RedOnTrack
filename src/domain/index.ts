@@ -9,6 +9,7 @@ export interface CameraFeed {
   location: string;
   status: 'active' | 'warning' | 'offline';
   lastUpdate: string;
+  videoUrl?: string;
 }
 
 // ============ Accident/Incident Domain ============
